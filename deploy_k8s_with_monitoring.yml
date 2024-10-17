@@ -1,0 +1,41 @@
+
+---
+- name: Deploy Kubernetes with Monitoring and Logging on AWS using Terraform and Jenkins
+  hosts: localhost
+  gather_facts: no
+  vars:
+    aws_access_key: "{{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}}"
+    aws_secret_key: "{{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}}"
+    region: "us-east-1"
+    jenkins_url: "http://your-jenkins-url:8080"
+    jenkins_user: "admin"
+    jenkins_password: "admin_password"
+    terraform_directory: "/path/to/your/terraform/files"
+    kube_config_path: "/path/to/output/kubeconfig"
+    grafana_admin_password: "grafana_password"
+    splunk_admin_password: "splunk_password"
+    splunk_url: "http://your-splunk-url:8000"
+
+  tasks:
+    # [Add previous tasks here as per the previous discussion]
+
+    - name: Deploy Grafana on Kubernetes
+      shell: |
+        kubectl create namespace monitoring
+        helm repo add grafana https://grafana.github.io/helm-charts
+        helm install grafana grafana/grafana --namespace monitoring --set adminPassword="{{{ grafana_admin_password }}}" --set service.type=LoadBalancer
+      args:
+        executable: /bin/bash
+      environment:
+        KUBECONFIG: "{{{ kube_config_path }}}"
+
+    - name: Deploy Splunk Enterprise on Kubernetes
+      shell: |
+        helm repo add splunk https://splunk.github.io/splunk-connect-for-kubernetes/
+        helm install splunk splunk/splunk --set password="{{{ splunk_admin_password }}}" --set splunk.hec.enabled=true --namespace logging --set service.type=LoadBalancer
+      args:
+        executable: /bin/bash
+      environment:
+        KUBECONFIG: "{{{ kube_config_path }}}"
+
+    
